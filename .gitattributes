@@ -1,0 +1,10 @@
+# Keep LF in the working tree for everything the Linux container reads (sources, scripts,
+# Makefiles), regardless of the host's core.autocrlf.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.qvm binary
+*.pk3 binary
+*.exe binary
+*.pdf binary
+*.jpg binary
+*.png binary

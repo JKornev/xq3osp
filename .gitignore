@@ -1,0 +1,9 @@
+# Build outputs (make -C build): build/vm/<module>.qvm, .map, per-file .asm, include shim
+/build/vm/
+/build/**/*.asm
+/build/**/*.tmp
+# Toolchain build tree, in case lcc is ever built in-tree instead of in Docker
+/src/tools/lcc/build/
+# Never commit id Software or OSP game assets
+*.pk3
+*.qvm

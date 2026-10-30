@@ -1,0 +1,78 @@
+# Builds qagame, cgame and ui with the xq3osp-build Docker image, checks every QVM
+# against the OSP 1.03a release hash (make verify), and uploads the QVMs as a workflow
+# artifact. On a tag push the same files are attached to a GitHub release named after
+# the tag, e.g.  git tag 1.03a && git push origin 1.03a
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qvm:
+    name: build and verify QVMs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build toolchain image
+        run: docker build -f docker/Dockerfile -t xq3osp-build .
+
+      - name: Build and verify modules
+        run: |
+          for m in qagame cgame ui; do
+            docker run --rm -v "$PWD:/work" -w /work xq3osp-build \
+              make -C build MODULE="$m" verify
+          done
+
+      - name: Package
+        run: |
+          ver="${GITHUB_REF_TYPE}" ; [ "$ver" = tag ] && ver="${GITHUB_REF_NAME}" || ver="${GITHUB_SHA::7}"
+          mkdir -p dist/vm
+          cp build/vm/*.qvm dist/vm/
+          (cd dist && sha256sum vm/*.qvm > SHA256SUMS.txt && cat SHA256SUMS.txt)
+          cp build/vm/*.map dist/
+          (cd dist && zip -r "xq3osp-${ver}-qvm.zip" vm SHA256SUMS.txt)
+          echo "ver=$ver" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xq3osp-${{ env.ver }}-qvm
+          path: dist
+          if-no-files-found: error
+
+  release:
+    name: attach to release
+    needs: qvm
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: xq3osp-*-qvm
+          merge-multiple: true
+          path: dist
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: OSP Tourney ${{ github.ref_name }}
+          body: |
+            Byte-identical rebuild of the OSP Tourney ${{ github.ref_name }} QVMs
+            (`qagame`, `cgame`, `ui`) from the recovered sources. Every file was
+            verified against the SHA-256 of the originally shipped QVM.
+
+            Drop the `vm/` folder into a pk3 (a zip renamed to `.pk3`) in your `osp`
+            mod directory, or use the attached zip as is.
+          files: |
+            dist/xq3osp-*-qvm.zip
+            dist/vm/*.qvm
+            dist/SHA256SUMS.txt
+          fail_on_unmatched_files: true

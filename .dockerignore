@@ -1,0 +1,5 @@
+# Build context is the repo root; only the tool sources go into the image.
+*
+!src/tools
+!docker/build-tools.sh
+!docker/cppdate.c
