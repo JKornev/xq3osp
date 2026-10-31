@@ -2,8 +2,8 @@
 
 Quake 3 OSP mod (recovered, byte-identical)
 
-This is a reverse-engineered source code of **OSP Tourney DM/CA/CTF 1.03a** for Quake III
-Arena, the mod by Jason "Rhea" Keimig and the OrangeSmoothie team whose source was never
+This is a reverse-engineered source code of **OSP Tourney DM/CA/CTF 1.03a** mod for Quake III
+Arena, the mod by the OrangeSmoothie team whose source was never
 released. All three game modules were restored from the shipped QVM bytecode. Compiled with
 id Software's original 1.32b `q3lcc` and `q3asm`, the sources produce files that are
 **byte-identical** to the QVMs OSP shipped in 2002 and 2003:
@@ -33,7 +33,7 @@ docker run --rm -v "${PWD}:/work" -w /work xq3osp-build make -C build MODULE=qag
 ```
 
 The result is `build/vm/<module>.qvm`. To use it, pack it into a pk3 as `vm/<module>.qvm`
-in the mod folder; engines read pk3 contents before loose files.
+in the mod folder.
 
 | Target | What it does |
 |---|---|
