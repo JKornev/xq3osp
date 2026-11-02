@@ -42,6 +42,12 @@ in the mod folder.
 | `verify` | clean build, then compare the SHA-256 with the shipped QVM's hash (`EXPECTED_SHA256` in `build/<module>.mk`); `verify: OK` or `verify: FAIL` with non-zero exit |
 | `clean` / `clean-all` | remove one module's outputs / all outputs |
 
+## Security fixes
+
+The `security-patches` branch fixes security issues found in OSP 1.03a. Because of these
+fixes, the QVMs built from this branch are no longer identical to the original 1.03a
+files, and their checksums differ from the ones listed above.
+
 ## Credits
 
 The restoration would not have been possible without these projects:
