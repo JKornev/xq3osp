@@ -1,6 +1,11 @@
 # xq3osp
+> ⚠️ **Important:** the original **OSP 1.03a** QVMs have security bugs, especially dangerous in network
+> games. A malicious player or server can crash the game, corrupt its memory or run console commands.
+> Use the [1.03a-secured](https://github.com/JKornev/xq3osp/releases/tag/1.03a-secured) release
+> instead, where these bugs are fixed (sources on the
+> [`security-patches`](https://github.com/JKornev/xq3osp/tree/security-patches) branch). This branch (`main`) keeps the byte-identical sources as a proof of concept and for learning purposes.
 
-Quake 3 OSP mod (recovered, byte-identical)
+**Quake 3 Arena OSP mod** (recovered, byte-identical)
 
 This is a reverse-engineered source code of **OSP Tourney DM/CA/CTF 1.03a** mod for Quake III
 Arena, the mod by the OrangeSmoothie team whose source was never
@@ -13,6 +18,7 @@ id Software's original 1.32b `q3lcc` and `q3asm`, the sources produce files that
 | `qagame` (server) | `zz-osp-server3a.pk3`, 4 Mar 2003 | `7ce6a6ac1fcb444206461e19129d4f5cd1c4ba79a3cbf881653e6450b8277160` |
 | `cgame` (client) | `zz-osp-pak3.pk3`, 28 Feb 2003 | `48e17665b0b274baa95670364364be373fbbda4aea6e74c1fb587aaa5feb33b3` |
 | `ui` (menus) | `zz-osp-pak1.pk3`, 13 Jan 2002 | `36133dea02f56992a8683f852893a414e330cc87063895671ee268b51891147c` |
+
 
 ## Build
 
