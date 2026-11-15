@@ -1838,30 +1838,30 @@ char *OSP_DemoName( int clientNum ) {
 		}
 
 		if ( j[0] < 0 || j[1] < 0 ) {
-			strcpy( demoName, va( "1v1-unknown-%d", level.time ) );
+			Q_strncpyz( demoName, va( "1v1-unknown-%d", level.time ), sizeof( demoName ) );
 			G_LogPrintf( "DEMORECORD: j[0]=%d, j[1]=%d\n", j[0], j[1] );
 		} else {
 			OSP_SanitizeFilename( level.clients[j[0]].pers.netname, strlen( level.clients[j[0]].pers.netname ), name1 );
 			OSP_SanitizeFilename( level.clients[j[1]].pers.netname, strlen( level.clients[j[1]].pers.netname ), name2 );
-			strcpy( demoName, va( "%s-vs-%s", name1, name2 ) );
+			Q_strncpyz( demoName, va( "%s-vs-%s", name1, name2 ), sizeof( demoName ) );
 		}
 	} else {
 		OSP_SanitizeFilename( level.clients[clientNum].pers.netname, strlen( level.clients[clientNum].pers.netname ), name1 );
 		if ( g_gametype.integer >= GT_TEAM && osp_numPlayerNames ) {
-			strcpy( demoName, va( "%s-vs-%s", osp_teamInfo[TEAM_RED].teamName, osp_teamInfo[TEAM_BLUE].teamName ) );
+			Q_strncpyz( demoName, va( "%s-vs-%s", osp_teamInfo[TEAM_RED].teamName, osp_teamInfo[TEAM_BLUE].teamName ), sizeof( demoName ) );
 		} else if ( g_gametype.integer == GT_TEAM ) {
-			strcpy( demoName, va( "%s-TDM", name1 ) );
+			Q_strncpyz( demoName, va( "%s-TDM", name1 ), sizeof( demoName ) );
 		} else if ( g_gametype.integer == GT_CTF ) {
-			strcpy( demoName, va( "%s-CTF", name1 ) );
+			Q_strncpyz( demoName, va( "%s-CTF", name1 ), sizeof( demoName ) );
 		} else if ( g_gametype.integer == 5 ) {
-			strcpy( demoName, va( "%s-CA", name1 ) );
+			Q_strncpyz( demoName, va( "%s-CA", name1 ), sizeof( demoName ) );
 		} else {
-			strcpy( demoName, va( "%s-FFA", name1 ) );
+			Q_strncpyz( demoName, va( "%s-FFA", name1 ), sizeof( demoName ) );
 		}
 	}
 
 	trap_GetServerinfo( info, sizeof( info ) );
-	strcat( demoName, va( "-%s", Info_ValueForKey( info, "mapname" ) ) );
+	Q_strcat( demoName, sizeof( demoName ), va( "-%s", Info_ValueForKey( info, "mapname" ) ) );
 	return demoName;
 }
 

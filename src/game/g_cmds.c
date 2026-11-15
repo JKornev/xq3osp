@@ -1110,8 +1110,8 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 	gentity_t	*other;
 	char		*text;
 	int			color;
-	char		name[64];
-	char		posName[64];
+	char		name[MAX_NETNAME + 8];
+	char		posName[MAX_NETNAME + 8];
 	int			team;
 	char		location[64];
 
