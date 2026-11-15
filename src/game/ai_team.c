@@ -57,7 +57,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //ctf task preferences for a client
 typedef struct bot_ctftaskpreference_s
 {
-	char		name[36];
+	char		name[MAX_NETNAME];
 	int			preference;
 } bot_ctftaskpreference_t;
 

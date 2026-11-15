@@ -710,6 +710,95 @@ static void ClientCleanName( const char *in, char *out, int outSize ) {
 
 /*
 ===========
+G_XNameIsHex
+===========
+*/
+static qboolean G_XNameIsHex( char c ) {
+	return ( ( c >= '0' && c <= '9' ) || ( c >= 'a' && c <= 'f' ) || ( c >= 'A' && c <= 'F' ) ) ? qtrue : qfalse;
+}
+
+/*
+===========
+G_XNameTransform
+
+Converts the extended x_name colour codes to the classic colour code language
+so unmodified clients render them correctly:
+
+  ^xRRGGBB  ->  ^XRRGGBB^n            (text colour; classic promote idiom)
+                 + ^X<lastShadow>     (restore an explicitly set shadow)
+  ^XRRGGBB  ->  verbatim              (shadow colour)
+  ^n / ^N   ->  ^7                    (reset)
+
+Everything else (palette ^0-^9, ^b/^B, ^f/^F, ^^, plain text) is copied
+verbatim. Readable characters are ALWAYS copied: when outSize runs low, colour
+codes are dropped (whole, never split — a truncation can never leak hex digits
+as visible text) and the plain letters keep their places.
+===========
+*/
+static void G_XNameTransform( const char *in, char *out, int outSize ) {
+	char	lastShadow[9];	// "^X" + 6 hex digits + NUL
+	int		o;
+
+	outSize--;					// room for the trailing NUL
+	o = 0;
+	lastShadow[0] = 0;
+
+	while ( *in && o < outSize ) {
+		char	code[10];
+		int		len;
+
+		if ( in[0] == '^' && in[1] ) {
+			if ( ( in[1] == 'x' || in[1] == 'X' ) &&
+				G_XNameIsHex( in[2] ) && G_XNameIsHex( in[3] ) && G_XNameIsHex( in[4] ) &&
+				G_XNameIsHex( in[5] ) && G_XNameIsHex( in[6] ) && G_XNameIsHex( in[7] ) ) {
+				// valid hex colour code
+				if ( in[1] == 'X' ) {
+					memcpy( lastShadow, in, 8 );
+					lastShadow[8] = 0;			// keep "^XRRGGBB"
+					if ( o + 8 <= outSize ) {
+						memcpy( out + o, in, 8 );
+						o += 8;
+					}
+					in += 8;
+					continue;
+				}
+				// ^x: emit shadow+promote so the TEXT takes the colour, then restore the shadow
+				code[0] = '^'; code[1] = 'X';
+				memcpy( code + 2, in + 2, 6 );
+				code[8] = 0;
+				len = 8 + 2;						// ^XRRGGBB^n
+				if ( lastShadow[0] ) {
+					len += 8;						// + ^X<shadow>
+				}
+				if ( o + len <= outSize ) {
+					memcpy( out + o, code, 8 ); o += 8;
+					memcpy( out + o, "^n", 2 ); o += 2;
+					if ( lastShadow[0] ) {
+						memcpy( out + o, lastShadow, 8 ); o += 8;
+					}
+				}
+				in += 8;
+				continue;
+			}
+			// any other pair; ^n/^N reset becomes plain white
+			if ( o + 2 <= outSize ) {
+				if ( in[1] == 'n' || in[1] == 'N' ) {
+					memcpy( out + o, "^7", 2 );
+				} else {
+					memcpy( out + o, in, 2 );
+				}
+				o += 2;
+			}
+			in += 2;
+			continue;
+		}
+		out[o++] = *in++;
+	}
+	out[o] = 0;
+}
+
+/*
+===========
 ClientUserInfoChanged
 
 Called from ClientConnect when the player first connects and
@@ -766,7 +855,12 @@ void ClientUserinfoChanged( int clientNum ) {
 
 	// set name
 	Q_strncpyz ( oldname, client->pers.netname, sizeof( oldname ) );
-	s = Info_ValueForKey (userinfo, "name");
+	// xq3osp: prefer the extended "x_name" userinfo key (up to MAX_NETNAME chars);
+	// without it the plain "name" key keeps its legacy behaviour
+	s = Info_ValueForKey (userinfo, "x_name");
+	if ( !s[0] ) {
+		s = Info_ValueForKey (userinfo, "name");
+	}
 
 	// OSP: name filters, name change flood protection, relay (QTV/GTV) names
 	if ( Q_stricmp( s, oldname ) && !( ent->r.svFlags & SVF_BOT ) ) {
@@ -802,16 +896,30 @@ void ClientUserinfoChanged( int clientNum ) {
 				trap_SendServerCommand( ent - g_entities, va( "print \"New name (%s^7) not valid!  Keeping '%s'\n\"", s, oldname ) );
 			}
 			trap_SendServerCommand( ent - g_entities, va( "stuff seta name ' %s' ", oldname ) );
+			trap_SendServerCommand( ent - g_entities, va( "stuff seta x_name ' %s' ", oldname ) );
 		}
 	} else {
+		// legacy name for the "n" configstring key and old clients
 		s = Info_ValueForKey (userinfo, "name");
-		ClientCleanName( s, client->pers.netname, sizeof(client->pers.netname) );
+		ClientCleanName( s, client->pers.netname_old, sizeof(client->pers.netname_old) );
+		// effective name for the game, logs and the "xn" configstring key;
+		// x_name uses the extended ^x/^X colour semantics and is translated to
+		// the classic code language so unmodified clients render it correctly
+		s = Info_ValueForKey (userinfo, "x_name");
+		if ( s[0] ) {
+			char rawName[MAX_NETNAME];
+			ClientCleanName( s, rawName, sizeof( rawName ) );
+			G_XNameTransform( rawName, client->pers.netname, sizeof(client->pers.netname) );
+		} else {
+			Q_strncpyz( client->pers.netname, client->pers.netname_old, sizeof(client->pers.netname) );
+		}
 		OSP_SortClients();
 	}
 
 	if ( client->sess.sessionTeam == TEAM_SPECTATOR ) {
 		if ( client->sess.spectatorState == SPECTATOR_SCOREBOARD ) {
 			Q_strncpyz( client->pers.netname, "scoreboard", sizeof(client->pers.netname) );
+			Q_strncpyz( client->pers.netname_old, "scoreboard", sizeof(client->pers.netname_old) );
 		}
 	}
 
@@ -889,16 +997,16 @@ void ClientUserinfoChanged( int clientNum ) {
 	// send over a subset of the userinfo keys so other clients can
 	// print scoreboards, display models, and play custom sounds
 	if ( ent->r.svFlags & SVF_BOT ) {
-		s = va("n\\%s\\t\\%i\\model\\%s\\hmodel\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\skill\\%s\\rt\\%i",
-			client->pers.netname, client->sess.sessionTeam, model, headModel, c1, c2,
+		s = va("n\\%s\\xn\\%s\\t\\%i\\model\\%s\\hmodel\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\skill\\%s\\rt\\%i",
+			client->pers.netname_old, client->pers.netname, client->sess.sessionTeam, model, headModel, c1, c2,
 			client->pers.maxHealth, client->sess.wins & 0xffff, client->sess.losses & 0xffff,
 			Info_ValueForKey( userinfo, "skill" ),
 			( client->sess.sessionTeam == TEAM_SPECTATOR ) ?
 				( OSP_IsRoundBased( g_gametype.integer ) ? client->sess.roundTeam : TEAM_SPECTATOR ) :
 				client->sess.sessionTeam );
 	} else {
-		s = va("n\\%s\\t\\%i\\model\\%s\\hmodel\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\rt\\%i\\st\\%i",
-			client->pers.netname, client->sess.sessionTeam, model, headModel, c1, c2,
+		s = va("n\\%s\\xn\\%s\\t\\%i\\model\\%s\\hmodel\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\rt\\%i\\st\\%i",
+			client->pers.netname_old, client->pers.netname, client->sess.sessionTeam, model, headModel, c1, c2,
 			client->pers.maxHealth, client->sess.wins & 0xffff, client->sess.losses & 0xffff,
 			( client->sess.sessionTeam == TEAM_SPECTATOR ) ?
 				( client->pers.followTeam ? client->pers.followTeam :

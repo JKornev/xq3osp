@@ -281,7 +281,8 @@ typedef struct {
 } clientSession_t;
 
 //
-#define MAX_NETNAME			36
+#define MAX_NETNAME			512		// max length of a client name on the server (was 36)
+#define	MAX_NETNAME_OLD		36		// legacy limit for the plain "name" userinfo key / "n" configstring key
 #define	MAX_VOTE_COUNT		3
 
 // client data that stays across multiple respawns, but is cleared
@@ -294,6 +295,7 @@ typedef struct {
 	qboolean	predictItemPickup;	// based on cg_predictItems userinfo
 	qboolean	pmoveFixed;			//
 	char		netname[MAX_NETNAME];
+	char		netname_old[MAX_NETNAME_OLD];	// legacy "n" name for old clients
 	int			maxHealth;			// for handicapping
 	int			enterTime;			// level.time the client entered the game
 	playerTeamState_t teamState;	// status in teamplay games

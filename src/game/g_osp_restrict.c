@@ -188,9 +188,9 @@ may play. nameOnly skips the address and password filters.
 */
 int OSP_CheckClientFilters( char *name, int clientNum, qboolean nameOnly ) {
 	int		i;
-	char	buf[256];
+	char	buf[MAX_NETNAME];
 
-	OSP_NormalizeName( name, strlen( name ), buf, qfalse );
+	OSP_NormalizeName( name, sizeof( buf ) - 1, buf, qfalse );
 	if ( strstr( buf, "QTV-" ) == buf || strstr( buf, "GTV-" ) == buf ||
 		( player_always.string[0] && strstr( buf, player_always.string ) == buf ) ) {
 		return 2;
@@ -532,14 +532,14 @@ int OSP_CheckFilters( char *name, int clientNum, qboolean nameOnly ) {
 	register int		res;
 	register int		passRes;
 	ospFilterCheck_t	check;
-	char				normName[64];
+	char				normName[MAX_NETNAME];
 	char				ip[64];
 	int					passAccepted;
 	int					ret;
 	char				password[64];
 	char				ospPassword[64];
 	char				userinfo[MAX_INFO_STRING];
-	char				infoName[64];
+	char				infoName[MAX_NETNAME];
 
 	passAccepted = 0;
 	OSP_NormalizeName( name, MAX_NETNAME, normName, qtrue );
